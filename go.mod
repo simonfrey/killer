@@ -1,4 +1,4 @@
-module killer
+module github.com/simonfrey/killer
 
 go 1.15
 
