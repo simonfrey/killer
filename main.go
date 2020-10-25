@@ -2,19 +2,20 @@ package main
 
 import (
 	"fmt"
+	"github.com/0xAX/notificator"
 	ps "github.com/mitchellh/go-ps"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
 	"syscall"
 	"time"
-	"github.com/0xAX/notificator"
 )
 
 func main() {
 	forbidden := os.Args[1:]
 
-	if len(forbidden) == 0{
+	if len(forbidden) == 0 {
 		fmt.Println("Usage: `killer process1 process2`")
 		os.Exit(1)
 	}
@@ -26,6 +27,14 @@ func main() {
 
 	notificationsSend := map[string]time.Time{}
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Kill)
+	go func() {
+		for range c {
+			fmt.Println(" ...nice try. Now go back to work ;)")
+		}
+	}()
 
 	for {
 
@@ -39,12 +48,12 @@ func main() {
 			pName := strings.ToLower(p.Executable())
 
 			for _, f := range forbidden {
-				containsName :=  strings.Contains(pName, f)
+				containsName := strings.Contains(pName, f)
 				if !containsName {
 					continue
 				}
-				percentage := float64(len(f))/float64(len(pName))
-				if percentage < 0.5{
+				percentage := float64(len(f)) / float64(len(pName))
+				if percentage < 0.5 {
 					continue
 				}
 
@@ -56,13 +65,13 @@ func main() {
 					continue
 				}
 
-				noti :=  fmt.Sprintf("%q is forbidden and killed",p.Executable())
+				noti := fmt.Sprintf("%q is forbidden and killed", p.Executable())
 
-				if t,ok := notificationsSend[noti]; ok && time.Now().Sub(t) < time.Second{
+				if t, ok := notificationsSend[noti]; ok && time.Now().Sub(t) < time.Second {
 					continue
 				}
 
-				notify.Push("Forbidden",noti, "", notificator.UR_NORMAL)
+				notify.Push("Forbidden", noti, "", notificator.UR_CRITICAL)
 				notificationsSend[noti] = time.Now()
 			}
 		}
